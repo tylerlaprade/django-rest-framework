@@ -36,10 +36,8 @@ def get_view_name(view):
     name = formatting.remove_trailing_string(name, 'ViewSet')
     name = formatting.camelcase_to_spaces(name)
 
-    # Suffix may be set by some Views, such as a ViewSet.
-    suffix = getattr(view, 'suffix', None)
-    if suffix:
-        name += ' ' + suffix
+    if suffix := getattr(view, 'suffix', None):
+        name += f' {suffix}'
 
     return name
 
@@ -57,9 +55,7 @@ def get_view_description(view, html=False):
         description = view.__class__.__doc__ or ''
 
     description = formatting.dedent(smart_str(description))
-    if html:
-        return formatting.markup_description(description)
-    return description
+    return formatting.markup_description(description) if html else description
 
 
 def set_rollback():
@@ -185,8 +181,7 @@ class APIView(View):
         If a request is unauthenticated, determine the WWW-Authenticate
         header to use for 401 responses, if any.
         """
-        authenticators = self.get_authenticators()
-        if authenticators:
+        if authenticators := self.get_authenticators():
             return authenticators[0].authenticate_header(request)
 
     def get_parser_context(self, http_request):
@@ -354,12 +349,11 @@ class APIView(View):
         Check if request should be throttled.
         Raises an appropriate exception if the request is throttled.
         """
-        throttle_durations = []
-        for throttle in self.get_throttles():
-            if not throttle.allow_request(request, self):
-                throttle_durations.append(throttle.wait())
-
-        if throttle_durations:
+        if throttle_durations := [
+            throttle.wait()
+            for throttle in self.get_throttles()
+            if not throttle.allow_request(request, self)
+        ]:
             # Filter out `None` values which may happen in case of config / rate
             # changes, see #1438
             durations = [
@@ -452,10 +446,7 @@ class APIView(View):
         """
         if isinstance(exc, (exceptions.NotAuthenticated,
                             exceptions.AuthenticationFailed)):
-            # WWW-Authenticate header for 401 responses, else coerce to 403
-            auth_header = self.get_authenticate_header(self.request)
-
-            if auth_header:
+            if auth_header := self.get_authenticate_header(self.request):
                 exc.auth_header = auth_header
             else:
                 exc.status_code = status.HTTP_403_FORBIDDEN

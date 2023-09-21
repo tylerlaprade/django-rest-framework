@@ -84,14 +84,13 @@ class SimpleRateThrottle(BaseThrottle):
         Determine the string representation of the allowed request rate.
         """
         if not getattr(self, 'scope', None):
-            msg = ("You must set either `.scope` or `.rate` for '%s' throttle" %
-                   self.__class__.__name__)
+            msg = f"You must set either `.scope` or `.rate` for '{self.__class__.__name__}' throttle"
             raise ImproperlyConfigured(msg)
 
         try:
             return self.THROTTLE_RATES[self.scope]
         except KeyError:
-            msg = "No default throttle rate set for '%s' scope" % self.scope
+            msg = f"No default throttle rate set for '{self.scope}' scope"
             raise ImproperlyConfigured(msg)
 
     def parse_rate(self, rate):

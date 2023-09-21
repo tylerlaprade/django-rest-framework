@@ -41,7 +41,7 @@ class FormatSuffixTests(TestCase):
                 if expected_resolved:
                     raise
             except Exception:
-                self.fail("Failed to resolve URL: %s" % request.path_info)
+                self.fail(f"Failed to resolve URL: {request.path_info}")
 
             if not expected_resolved:
                 assert callback is None

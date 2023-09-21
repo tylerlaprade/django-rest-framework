@@ -37,9 +37,5 @@ class Command(BaseCommand):
         try:
             token = self.create_user_token(username, reset_token)
         except UserModel.DoesNotExist:
-            raise CommandError(
-                'Cannot create the Token: user {} does not exist'.format(
-                    username)
-            )
-        self.stdout.write(
-            'Generated token {} for user {}'.format(token.key, username))
+            raise CommandError(f'Cannot create the Token: user {username} does not exist')
+        self.stdout.write(f'Generated token {token.key} for user {username}')

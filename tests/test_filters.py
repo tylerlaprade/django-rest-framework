@@ -201,14 +201,16 @@ class SearchFilterTests(TestCase):
 
         view = SearchListView.as_view()
 
-        # an example custom transform, that trims `a` from the string.
+
+
         class TrimA(Transform):
             function = 'TRIM'
             lookup_name = 'trim'
 
             def as_sql(self, compiler, connection):
                 sql, params = compiler.compile(self.lhs)
-                return "trim(%s, 'a')" % sql, params
+                return f"trim({sql}, 'a')", params
+
 
         with register_lookup(CharField, TrimA):
             # Search including `a`
@@ -248,12 +250,11 @@ class SearchFilterFkTests(TestCase):
         prefixes = [''] + list(filter_.lookup_prefixes)
         for prefix in prefixes:
             assert not filter_.must_call_distinct(
-                SearchFilterModelFk._meta,
-                ["%stitle" % prefix]
+                SearchFilterModelFk._meta, [f"{prefix}title"]
             )
             assert not filter_.must_call_distinct(
                 SearchFilterModelFk._meta,
-                ["%stitle" % prefix, "%sattribute__label" % prefix]
+                [f"{prefix}title", f"{prefix}attribute__label"],
             )
 
     def test_must_call_distinct_restores_meta_for_each_field(self):
@@ -264,7 +265,7 @@ class SearchFilterFkTests(TestCase):
         for prefix in prefixes:
             assert not filter_.must_call_distinct(
                 SearchFilterModelFk._meta,
-                ["%sattribute__label" % prefix, "%stitle" % prefix]
+                [f"{prefix}attribute__label", f"{prefix}title"],
             )
 
 
@@ -319,13 +320,12 @@ class SearchFilterM2MTests(TestCase):
         prefixes = [''] + list(filter_.lookup_prefixes)
         for prefix in prefixes:
             assert not filter_.must_call_distinct(
-                SearchFilterModelM2M._meta,
-                ["%stitle" % prefix]
+                SearchFilterModelM2M._meta, [f"{prefix}title"]
             )
 
             assert filter_.must_call_distinct(
                 SearchFilterModelM2M._meta,
-                ["%stitle" % prefix, "%sattributes__label" % prefix]
+                [f"{prefix}title", f"{prefix}attributes__label"],
             )
 
 
@@ -426,7 +426,7 @@ class OrderingFilterModel(models.Model):
 
     @property
     def description(self):
-        return self.title + ": " + self.text
+        return f"{self.title}: {self.text}"
 
 
 class OrderingFilterRelatedModel(models.Model):

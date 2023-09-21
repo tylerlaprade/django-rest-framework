@@ -65,7 +65,7 @@ class JSONParser(BaseParser):
             parse_constant = json.strict_constant if self.strict else None
             return json.load(decoded_stream, parse_constant=parse_constant)
         except ValueError as exc:
-            raise ParseError('JSON parse error - %s' % str(exc))
+            raise ParseError(f'JSON parse error - {str(exc)}')
 
 
 class FormParser(BaseParser):
@@ -110,7 +110,7 @@ class MultiPartParser(BaseParser):
             data, files = parser.parse()
             return DataAndFiles(data, files)
         except MultiPartParserError as exc:
-            raise ParseError('Multipart form parse error - %s' % str(exc))
+            raise ParseError(f'Multipart form parse error - {str(exc)}')
 
 
 class FileUploadParser(BaseParser):
@@ -201,6 +201,4 @@ class FileUploadParser(BaseParser):
         with contextlib.suppress(AttributeError, KeyError, ValueError):
             meta = parser_context['request'].META
             disposition, params = parse_header_parameters(meta['HTTP_CONTENT_DISPOSITION'])
-            if 'filename*' in params:
-                return params['filename*']
-            return params['filename']
+            return params['filename*'] if 'filename*' in params else params['filename']

@@ -9,9 +9,7 @@ from django.views.generic import View
 
 def unicode_http_header(value):
     # Coerce HTTP header value to unicode.
-    if isinstance(value, bytes):
-        return value.decode('iso-8859-1')
-    return value
+    return value.decode('iso-8859-1') if isinstance(value, bytes) else value
 
 
 def distinct(queryset, base):

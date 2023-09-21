@@ -49,17 +49,21 @@ class _MediaType:
 
     def match(self, other):
         """Return true if this MediaType satisfies the given MediaType."""
-        for key in self.params:
-            if key != 'q' and other.params.get(key, None) != self.params.get(key, None):
-                return False
-
-        if self.sub_type != '*' and other.sub_type != '*' and other.sub_type != self.sub_type:
-            return False
-
-        if self.main_type != '*' and other.main_type != '*' and other.main_type != self.main_type:
-            return False
-
-        return True
+        return next(
+            (
+                False
+                for key in self.params
+                if key != 'q'
+                and other.params.get(key, None) != self.params.get(key, None)
+            ),
+            False
+            if self.sub_type != '*'
+            and other.sub_type != '*'
+            and other.sub_type != self.sub_type
+            else self.main_type == '*'
+            or other.main_type == '*'
+            or other.main_type == self.main_type,
+        )
 
     @property
     def precedence(self):
@@ -75,7 +79,7 @@ class _MediaType:
         return 3
 
     def __str__(self):
-        ret = "%s/%s" % (self.main_type, self.sub_type)
+        ret = f"{self.main_type}/{self.sub_type}"
         for key, val in self.params.items():
-            ret += "; %s=%s" % (key, val)
+            ret += f"; {key}={val}"
         return ret

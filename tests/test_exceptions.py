@@ -43,13 +43,15 @@ class ExceptionTestCase(TestCase):
 
         exception = Throttled(wait=2)
         assert exception.get_full_details() == {
-            'message': 'Request was throttled. Expected available in {} seconds.'.format(2),
-            'code': 'throttled'}
+            'message': 'Request was throttled. Expected available in 2 seconds.',
+            'code': 'throttled',
+        }
 
         exception = Throttled(wait=2, detail='Slow down!')
         assert exception.get_full_details() == {
-            'message': 'Slow down! Expected available in {} seconds.'.format(2),
-            'code': 'throttled'}
+            'message': 'Slow down! Expected available in 2 seconds.',
+            'code': 'throttled',
+        }
 
 
 class ErrorDetailTests(TestCase):

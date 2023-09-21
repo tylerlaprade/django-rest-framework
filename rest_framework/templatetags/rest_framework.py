@@ -156,17 +156,12 @@ def add_query_param(request, key, val):
 
 @register.filter
 def as_string(value):
-    if value is None:
-        return ''
-    return '%s' % value
+    return '' if value is None else f'{value}'
 
 
 @register.filter
 def as_list_of_strings(value):
-    return [
-        '' if (item is None) else ('%s' % item)
-        for item in value
-    ]
+    return ['' if item is None else f'{item}' for item in value]
 
 
 @register.filter
@@ -185,24 +180,23 @@ def add_class(value, css_class):
     classes to the forms.
     """
     html = str(value)
-    match = class_re.search(html)
-    if match:
-        m = re.search(r'^%s$|^%s\s|\s%s\s|\s%s$' % (css_class, css_class,
-                                                    css_class, css_class),
-                      match.group(1))
-        if not m:
-            return mark_safe(class_re.sub(match.group(1) + " " + css_class,
-                                          html))
+    if not (match := class_re.search(html)):
+        return mark_safe(html.replace('>', f' class="{css_class}">', 1))
+    if m := re.search(
+        r'^%s$|^%s\s|\s%s\s|\s%s$'
+        % (css_class, css_class, css_class, css_class),
+        match.group(1),
+    ):
+        return value
     else:
-        return mark_safe(html.replace('>', ' class="%s">' % css_class, 1))
-    return value
+        return mark_safe(class_re.sub(f"{match.group(1)} {css_class}", html))
 
 
 @register.filter
 def format_value(value):
     if getattr(value, 'is_hyperlink', False):
         name = str(value.obj)
-        return mark_safe('<a href=%s>%s</a>' % (value, escape(name)))
+        return mark_safe(f'<a href={value}>{escape(name)}</a>')
     if value is None or isinstance(value, bool):
         return mark_safe('<code>%s</code>' % {True: 'true', False: 'false', None: 'null'}[value])
     elif isinstance(value, list):
@@ -225,7 +219,7 @@ def format_value(value):
         elif '@' in value and not re.search(r'\s', value):
             return mark_safe('<a href="mailto:{value}">{value}</a>'.format(value=escape(value)))
         elif '\n' in value:
-            return mark_safe('<pre>%s</pre>' % escape(value))
+            return mark_safe(f'<pre>{escape(value)}</pre>')
     return str(value)
 
 
@@ -237,11 +231,7 @@ def items(value):
     lookup.  See issue #4931
     Also see: https://stackoverflow.com/questions/15416662/django-template-loop-over-dictionary-items-with-items-as-key
     """
-    if value is None:
-        # `{% for k, v in value.items %}` doesn't raise when value is None or
-        # not in the context, so neither should `{% for k, v in value|items %}`
-        return []
-    return value.items()
+    return [] if value is None else value.items()
 
 
 @register.filter
@@ -263,7 +253,6 @@ def schema_links(section, sec_key=None):
     """
     Recursively find every link in a schema, even nested.
     """
-    NESTED_FORMAT = '%s > %s'  # this format is used in docs/js/api.js:normalizeKeys
     links = section.links
     if section.data:
         data = section.data.items()
@@ -273,6 +262,7 @@ def schema_links(section, sec_key=None):
 
     if sec_key is not None:
         new_links = OrderedDict()
+        NESTED_FORMAT = '%s > %s'  # this format is used in docs/js/api.js:normalizeKeys
         for link_key, link in links.items():
             new_key = NESTED_FORMAT % (sec_key, link_key)
             new_links.update({new_key: link})

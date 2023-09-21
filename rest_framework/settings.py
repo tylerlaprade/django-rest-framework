@@ -178,7 +178,7 @@ def import_from_string(val, setting_name):
     try:
         return import_string(val)
     except ImportError as e:
-        msg = "Could not import '%s' for API setting '%s'. %s: %s." % (val, setting_name, e.__class__.__name__, e)
+        msg = f"Could not import '{val}' for API setting '{setting_name}'. {e.__class__.__name__}: {e}."
         raise ImportError(msg)
 
 
@@ -213,7 +213,7 @@ class APISettings:
 
     def __getattr__(self, attr):
         if attr not in self.defaults:
-            raise AttributeError("Invalid API setting: '%s'" % attr)
+            raise AttributeError(f"Invalid API setting: '{attr}'")
 
         try:
             # Check if present in user settings
@@ -235,7 +235,9 @@ class APISettings:
         SETTINGS_DOC = "https://www.django-rest-framework.org/api-guide/settings/"
         for setting in REMOVED_SETTINGS:
             if setting in user_settings:
-                raise RuntimeError("The '%s' setting has been removed. Please refer to '%s' for available settings." % (setting, SETTINGS_DOC))
+                raise RuntimeError(
+                    f"The '{setting}' setting has been removed. Please refer to '{SETTINGS_DOC}' for available settings."
+                )
         return user_settings
 
     def reload(self):

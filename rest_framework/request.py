@@ -27,8 +27,10 @@ def is_form_media_type(media_type):
     Return True if the media type is a valid form media type.
     """
     base_media_type, params = parse_header_parameters(media_type)
-    return (base_media_type == 'application/x-www-form-urlencoded' or
-            base_media_type == 'multipart/form-data')
+    return base_media_type in [
+        'application/x-www-form-urlencoded',
+        'multipart/form-data',
+    ]
 
 
 class override_method:
@@ -87,7 +89,7 @@ class Empty:
 
 
 def _hasattr(obj, name):
-    return not getattr(obj, name) is Empty
+    return getattr(obj, name) is not Empty
 
 
 def clone_request(request, method):
@@ -151,11 +153,9 @@ class Request:
 
     def __init__(self, request, parsers=None, authenticators=None,
                  negotiator=None, parser_context=None):
-        assert isinstance(request, HttpRequest), (
-            'The `request` argument must be an instance of '
-            '`django.http.HttpRequest`, not `{}.{}`.'
-            .format(request.__class__.__module__, request.__class__.__name__)
-        )
+        assert isinstance(
+            request, HttpRequest
+        ), f'The `request` argument must be an instance of `django.http.HttpRequest`, not `{request.__class__.__module__}.{request.__class__.__name__}`.'
 
         self._request = request
         self.parsers = parsers or ()

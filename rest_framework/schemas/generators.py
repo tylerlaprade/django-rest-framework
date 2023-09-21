@@ -61,10 +61,7 @@ class EndpointEnumerator:
                 urlconf = settings.ROOT_URLCONF
 
             # Load the given URLconf module
-            if isinstance(urlconf, str):
-                urls = import_module(urlconf)
-            else:
-                urls = urlconf
+            urls = import_module(urlconf) if isinstance(urlconf, str) else urlconf
             patterns = urls.urlpatterns
 
         self.patterns = patterns
@@ -124,10 +121,7 @@ class EndpointEnumerator:
             if callback.initkwargs['schema'] is None:
                 return False
 
-        if path.endswith('.{format}') or path.endswith('.{format}/'):
-            return False  # Ignore .json style URLs.
-
-        return True
+        return not path.endswith('.{format}') and not path.endswith('.{format}/')
 
     def get_allowed_methods(self, callback):
         """
@@ -215,8 +209,7 @@ class BaseSchemaGenerator:
         """
         if not self.coerce_path_pk or '{pk}' not in path:
             return path
-        model = getattr(getattr(view, 'queryset', None), 'model', None)
-        if model:
+        if model := getattr(getattr(view, 'queryset', None), 'model', None):
             field_name = get_pk_name(model)
         else:
             field_name = 'id'

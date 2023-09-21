@@ -62,7 +62,7 @@ if sys.argv[-1] == 'publish':
         sys.exit()
     os.system("twine upload dist/*")
     print("You probably want to also tag the version now:")
-    print("  git tag -a %s -m 'version %s'" % (version, version))
+    print(f"  git tag -a {version} -m 'version {version}'")
     print("  git push --tags")
     shutil.rmtree('dist')
     shutil.rmtree('build')

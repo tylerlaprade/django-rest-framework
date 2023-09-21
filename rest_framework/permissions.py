@@ -213,17 +213,16 @@ class DjangoModelPermissions(BasePermission):
         return [perm % kwargs for perm in self.perms_map[method]]
 
     def _queryset(self, view):
-        assert hasattr(view, 'get_queryset') \
-            or getattr(view, 'queryset', None) is not None, (
-            'Cannot apply {} on a view that does not set '
-            '`.queryset` or have a `.get_queryset()` method.'
-        ).format(self.__class__.__name__)
+        assert (
+            hasattr(view, 'get_queryset')
+            or getattr(view, 'queryset', None) is not None
+        ), f'Cannot apply {self.__class__.__name__} on a view that does not set `.queryset` or have a `.get_queryset()` method.'
 
         if hasattr(view, 'get_queryset'):
             queryset = view.get_queryset()
-            assert queryset is not None, (
-                '{}.get_queryset() returned None'.format(view.__class__.__name__)
-            )
+            assert (
+                queryset is not None
+            ), f'{view.__class__.__name__}.get_queryset() returned None'
             return queryset
         return view.queryset
 

@@ -84,7 +84,7 @@ class ThrottlingTests(TestCase):
         Ensure request rate is limited
         """
         request = self.factory.get('/')
-        for dummy in range(4):
+        for _ in range(4):
             response = MockView.as_view()(request)
         assert response.status_code == 429
 
@@ -102,7 +102,7 @@ class ThrottlingTests(TestCase):
         self.set_throttle_timer(MockView, 0)
 
         request = self.factory.get('/')
-        for dummy in range(4):
+        for _ in range(4):
             response = MockView.as_view()(request)
         assert response.status_code == 429
 
@@ -115,7 +115,7 @@ class ThrottlingTests(TestCase):
     def ensure_is_throttled(self, view, expect):
         request = self.factory.get('/')
         request.user = User.objects.create(username='a')
-        for dummy in range(3):
+        for _ in range(3):
             view.as_view()(request)
         request.user = User.objects.create(username='b')
         response = view.as_view()(request)
@@ -135,7 +135,7 @@ class ThrottlingTests(TestCase):
         """
         self.set_throttle_timer(MockView_DoubleThrottling, 0)
         request = self.factory.get('/')
-        for dummy in range(4):
+        for _ in range(4):
             response = MockView_DoubleThrottling.as_view()(request)
         assert response.status_code == 429
         assert int(response['retry-after']) == 1
@@ -145,7 +145,7 @@ class ThrottlingTests(TestCase):
         # should be allowed to make 2 more before being throttled by the 2nd
         # throttle class, which has a limit of 6 per minute.
         self.set_throttle_timer(MockView_DoubleThrottling, 1)
-        for dummy in range(2):
+        for _ in range(2):
             response = MockView_DoubleThrottling.as_view()(request)
             assert response.status_code == 200
 
@@ -162,7 +162,7 @@ class ThrottlingTests(TestCase):
     def test_throttle_rate_change_negative(self):
         self.set_throttle_timer(MockView_DoubleThrottling, 0)
         request = self.factory.get('/')
-        for dummy in range(24):
+        for _ in range(24):
             response = MockView_DoubleThrottling.as_view()(request)
         assert response.status_code == 429
         assert int(response['retry-after']) == 60
@@ -171,7 +171,7 @@ class ThrottlingTests(TestCase):
         try:
             User3SecRateThrottle.rate = '1/sec'
 
-            for dummy in range(24):
+            for _ in range(24):
                 response = MockView_DoubleThrottling.as_view()(request)
 
             assert response.status_code == 429
@@ -192,7 +192,7 @@ class ThrottlingTests(TestCase):
             if expect is not None:
                 assert response['Retry-After'] == expect
             else:
-                assert not'Retry-After' in response
+                assert 'Retry-After' not in response
 
     def test_seconds_fields(self):
         """
@@ -354,12 +354,13 @@ class ScopedRateThrottleTests(TestCase):
     def test_unscoped_view_not_throttled(self):
         request = self.factory.get('/')
 
-        for idx in range(10):
+        for _ in range(10):
             self.increment_timer()
             response = self.unscoped_view(request)
             assert response.status_code == 200
 
     def test_get_cache_key_returns_correct_key_if_user_is_authenticated(self):
+
         class DummyView:
             throttle_scope = 'user'
 
@@ -369,7 +370,7 @@ class ScopedRateThrottleTests(TestCase):
         request.user = user
         self.throttle.allow_request(request, DummyView())
         cache_key = self.throttle.get_cache_key(request, view=DummyView())
-        assert cache_key == 'throttle_user_%s' % user.pk
+        assert cache_key == f'throttle_user_{user.pk}'
 
 
 class XffTestingBase(TestCase):

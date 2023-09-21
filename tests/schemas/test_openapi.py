@@ -25,18 +25,16 @@ from . import views
 
 def create_request(path):
     factory = RequestFactory()
-    request = Request(factory.get(path))
-    return request
+    return Request(factory.get(path))
 
 
 def create_view(view_cls, method, request):
     generator = SchemaGenerator()
-    view = generator.create_view(view_cls.as_view(), method, request)
-    return view
+    return generator.create_view(view_cls.as_view(), method, request)
 
 
 class TestBasics(TestCase):
-    def dummy_view(request):
+    def dummy_view(self):
         pass
 
     def test_filters(self):
@@ -114,9 +112,13 @@ class TestFieldMapping(TestCase):
         assert 'default' not in data['properties']['without_default'], "default must not be defined"
 
     def test_custom_field_name(self):
+
+
+
         class CustomSchema(AutoSchema):
             def get_field_name(self, field):
-                return 'custom_' + field.field_name
+                return f'custom_{field.field_name}'
+
 
         class Serializer(serializers.Serializer):
             text_field = serializers.CharField()
@@ -313,7 +315,7 @@ class TestOperationIntrospection(TestCase):
         # there should be no empty 'required' property, see #6834
         assert 'required' not in component
 
-        for response in inspector.get_responses(path, method).values():
+        for _ in inspector.get_responses(path, method).values():
             assert 'required' not in component
 
     def test_empty_required_with_patch_method(self):
@@ -339,7 +341,7 @@ class TestOperationIntrospection(TestCase):
         component = components['Item']
         # there should be no empty 'required' property, see #6834
         assert 'required' not in component
-        for response in inspector.get_responses(path, method).values():
+        for _ in inspector.get_responses(path, method).values():
             assert 'required' not in component
 
     def test_response_body_generation(self):
@@ -596,10 +598,10 @@ class TestOperationIntrospection(TestCase):
             'o1': reused_object,
             'o2': reused_object,
         }
-        assert (
-            renderer.render(data) == b'o1:\n  test: test\no2:\n  test: test\n' or
-            renderer.render(data) == b'o2:\n  test: test\no1:\n  test: test\n'  # py <= 3.5
-        )
+        assert renderer.render(data) in [
+            b'o1:\n  test: test\no2:\n  test: test\n',
+            b'o2:\n  test: test\no1:\n  test: test\n',
+        ]
 
     def test_openapi_yaml_safestring_render(self):
         renderer = OpenAPIRenderer()
@@ -898,7 +900,7 @@ class TestOperationIntrospection(TestCase):
 
             assert len(w) == 1
             assert issubclass(w[-1].category, UserWarning)
-            print(str(w[-1].message))
+            print(w[-1].message)
             assert 'You have a duplicated operationId' in str(w[-1].message)
 
     def test_operation_id_viewset(self):
@@ -1047,16 +1049,18 @@ class TestOperationIntrospection(TestCase):
         assert schema['paths']['/test/']['get']['tags'] == ['example1', 'example2']
 
     def test_overridden_get_tags_method(self):
+
+
+
         class MySchema(AutoSchema):
             def get_tags(self, path, method):
                 if path.endswith('/new/'):
-                    tags = ['tag1', 'tag2']
+                    return ['tag1', 'tag2']
                 elif path.endswith('/old/'):
-                    tags = ['tag2', 'tag3']
+                    return ['tag2', 'tag3']
                 else:
-                    tags = ['tag4', 'tag5']
+                    return ['tag4', 'tag5']
 
-                return tags
 
         class ExampleStringTagsViewSet(views.ExampleGenericViewSet):
             schema = MySchema()

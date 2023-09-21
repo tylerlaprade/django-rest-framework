@@ -1222,13 +1222,10 @@ class TestURLNamingCollisions(TestCase):
         if methods is None:
             methods = ('read', 'update', 'partial_update', 'delete')
         if suffixes is None:
-            suffixes = (None for m in methods)
+            suffixes = (None for _ in methods)
 
         for method, suffix in zip(methods, suffixes):
-            if suffix is not None:
-                key = '{}_{}'.format(method, suffix)
-            else:
-                key = method
+            key = f'{method}_{suffix}' if suffix is not None else method
             assert loc[key].url == url
 
     def test_manually_routing_generic_view(self):

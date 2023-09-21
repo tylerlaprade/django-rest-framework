@@ -70,7 +70,7 @@ if requests is not None:
                 key = key.upper()
                 if key in ('CONNECTION', 'CONTENT-LENGTH', 'CONTENT-TYPE'):
                     continue
-                kwargs['HTTP_%s' % key.replace('-', '_')] = value
+                kwargs[f"HTTP_{key.replace('-', '_')}"] = value
 
             return self.factory.generic(method, url, **kwargs).environ
 
@@ -112,7 +112,9 @@ if requests is not None:
 
         def request(self, method, url, *args, **kwargs):
             if not url.startswith('http'):
-                raise ValueError('Missing "http:" or "https:". Use a fully qualified URL, eg "http://testserver%s"' % url)
+                raise ValueError(
+                    f'Missing "http:" or "https:". Use a fully qualified URL, eg "http://testserver{url}"'
+                )
             return super().request(method, url, *args, **kwargs)
 
 else:
@@ -142,9 +144,7 @@ class APIRequestFactory(DjangoRequestFactory):
 
     def __init__(self, enforce_csrf_checks=False, **defaults):
         self.enforce_csrf_checks = enforce_csrf_checks
-        self.renderer_classes = {}
-        for cls in self.renderer_classes_list:
-            self.renderer_classes[cls.format] = cls
+        self.renderer_classes = {cls.format: cls for cls in self.renderer_classes_list}
         super().__init__(**defaults)
 
     def _encode_data(self, data, format=None, content_type=None):
@@ -166,14 +166,9 @@ class APIRequestFactory(DjangoRequestFactory):
         else:
             format = format or self.default_format
 
-            assert format in self.renderer_classes, (
-                "Invalid format '{}'. Available formats are {}. "
-                "Set TEST_REQUEST_RENDERER_CLASSES to enable "
-                "extra request formats.".format(
-                    format,
-                    ', '.join(["'" + fmt + "'" for fmt in self.renderer_classes])
-                )
-            )
+            assert (
+                format in self.renderer_classes
+            ), f"""Invalid format '{format}'. Available formats are {', '.join([f"'{fmt}'" for fmt in self.renderer_classes])}. Set TEST_REQUEST_RENDERER_CLASSES to enable extra request formats."""
 
             # Use format and render the data into a bytestring
             renderer = self.renderer_classes[format]()
@@ -182,9 +177,7 @@ class APIRequestFactory(DjangoRequestFactory):
             # Determine the content-type header from the renderer
             content_type = renderer.media_type
             if renderer.charset:
-                content_type = "{}; charset={}".format(
-                    content_type, renderer.charset
-                )
+                content_type = f"{content_type}; charset={renderer.charset}"
 
             # Coerce text to bytes if required.
             if isinstance(ret, str):

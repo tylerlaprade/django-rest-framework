@@ -321,9 +321,12 @@ class TestHyperlinkedRelatedField(URLPatternsTestCase, APITestCase):
     def setUp(self):
         super().setUp()
 
+
+
         class MockQueryset:
             def get(self, pk):
-                return 'object %s' % pk
+                return f'object {pk}'
+
 
         self.field = serializers.HyperlinkedRelatedField(
             view_name='namespaced',

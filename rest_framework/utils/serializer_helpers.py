@@ -89,9 +89,7 @@ class BoundField:
         return self._field.__class__
 
     def __repr__(self):
-        return '<%s value=%s errors=%s>' % (
-            self.__class__.__name__, self.value, self.errors
-        )
+        return f'<{self.__class__.__name__} value={self.value} errors={self.errors}>'
 
     def as_form_field(self):
         value = '' if (self.value is None or self.value is False) else self.value
@@ -135,10 +133,10 @@ class NestedBoundField(BoundField):
         value = self.value.get(key) if self.value else None
         error = self.errors.get(key) if isinstance(self.errors, dict) else None
         if hasattr(field, 'fields'):
-            return NestedBoundField(field, value, error, prefix=self.name + '.')
+            return NestedBoundField(field, value, error, prefix=f'{self.name}.')
         elif getattr(field, '_is_jsonfield', False):
-            return JSONBoundField(field, value, error, prefix=self.name + '.')
-        return BoundField(field, value, error, prefix=self.name + '.')
+            return JSONBoundField(field, value, error, prefix=f'{self.name}.')
+        return BoundField(field, value, error, prefix=f'{self.name}.')
 
     def as_form_field(self):
         values = {}

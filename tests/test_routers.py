@@ -444,10 +444,7 @@ class TestDynamicListAndDetailRouter(TestCase):
             else:
                 assert route.url == '^{{prefix}}/{{lookup}}/{0}{{trailing_slash}}$'.format(url_path)
             # check method to function mapping
-            if method_name.endswith('_post'):
-                method_map = 'post'
-            else:
-                method_map = 'get'
+            method_map = 'post' if method_name.endswith('_post') else 'get'
             assert route.mapping[method_map] == method_name
 
     def test_list_and_detail_route_decorators(self):
@@ -481,14 +478,14 @@ class TestRegexUrlPath(URLPatternsTestCase, TestCase):
 
     def test_regex_url_path_list(self):
         kwarg = '1234'
-        response = self.client.get('/regex/list/{}/'.format(kwarg))
+        response = self.client.get(f'/regex/list/{kwarg}/')
         assert response.status_code == 200
         assert json.loads(response.content.decode()) == {'kwarg': kwarg}
 
     def test_regex_url_path_detail(self):
         pk = '1'
         kwarg = '1234'
-        response = self.client.get('/regex/{}/detail/{}/'.format(pk, kwarg))
+        response = self.client.get(f'/regex/{pk}/detail/{kwarg}/')
         assert response.status_code == 200
         assert json.loads(response.content.decode()) == {'pk': pk, 'kwarg': kwarg}
 
@@ -550,14 +547,14 @@ class TestUrlPath(URLPatternsTestCase, TestCase):
 
     def test_list_extra_action(self):
         kwarg = 1234
-        response = self.client.get('/path/list/{}/'.format(kwarg))
+        response = self.client.get(f'/path/list/{kwarg}/')
         assert response.status_code == 200
         assert json.loads(response.content.decode()) == {'kwarg': kwarg}
 
     def test_detail_extra_action(self):
         pk = '1'
         kwarg = 1234
-        response = self.client.get('/path/{}/detail/{}/'.format(pk, kwarg))
+        response = self.client.get(f'/path/{pk}/detail/{kwarg}/')
         assert response.status_code == 200
         assert json.loads(response.content.decode()) == {'pk': pk, 'kwarg': kwarg}
 

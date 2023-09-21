@@ -197,8 +197,7 @@ class TemplateHTMLRenderer(BaseRenderer):
         except Exception:
             # Fall back to using eg '404 Not Found'
             body = '%d %s' % (response.status_code, response.status_text.title())
-            template = engines['django'].from_string(body)
-            return template
+            return engines['django'].from_string(body)
 
 
 # Note, subclass TemplateHTMLRenderer simply for the exception behavior
@@ -362,7 +361,7 @@ class HTMLFormRenderer(BaseRenderer):
         style['renderer'] = self
 
         template_pack = style['template_pack'].strip('/')
-        template_name = template_pack + '/' + self.base_template
+        template_name = f'{template_pack}/{self.base_template}'
         template = loader.get_template(template_name)
         context = {
             'form': form,
@@ -491,18 +490,17 @@ class BrowsableAPIRenderer(BaseRenderer):
                 with contextlib.suppress(TypeError):
                     return self.render_form_for_serializer(existing_serializer)
             if has_serializer:
-                if method in ('PUT', 'PATCH'):
-                    serializer = view.get_serializer(instance=instance, **kwargs)
-                else:
-                    serializer = view.get_serializer(**kwargs)
+                serializer = (
+                    view.get_serializer(instance=instance, **kwargs)
+                    if method in ('PUT', 'PATCH')
+                    else view.get_serializer(**kwargs)
+                )
+            elif method in ('PUT', 'PATCH'):
+                serializer = self._get_serializer(view.serializer_class, view,
+                                                  request, instance=instance, **kwargs)
             else:
-                # at this point we must have a serializer_class
-                if method in ('PUT', 'PATCH'):
-                    serializer = self._get_serializer(view.serializer_class, view,
-                                                      request, instance=instance, **kwargs)
-                else:
-                    serializer = self._get_serializer(view.serializer_class, view,
-                                                      request, **kwargs)
+                serializer = self._get_serializer(view.serializer_class, view,
+                                                  request, **kwargs)
 
             return self.render_form_for_serializer(serializer)
 
@@ -620,15 +618,14 @@ class BrowsableAPIRenderer(BaseRenderer):
                 paginator.get_results(data)
             except (TypeError, KeyError):
                 return
-        elif not isinstance(data, list):
+        else:
             return
 
         queryset = view.get_queryset()
         elements = []
         for backend in view.filter_backends:
             if hasattr(backend, 'to_html'):
-                html = backend().to_html(request, queryset, view)
-                if html:
+                if html := backend().to_html(request, queryset, view):
                     elements.append(html)
 
         if not elements:
@@ -656,9 +653,9 @@ class BrowsableAPIRenderer(BaseRenderer):
         response_headers = OrderedDict(sorted(response.items()))
         renderer_content_type = ''
         if renderer:
-            renderer_content_type = '%s' % renderer.media_type
+            renderer_content_type = f'{renderer.media_type}'
             if renderer.charset:
-                renderer_content_type += ' ;%s' % renderer.charset
+                renderer_content_type += f' ;{renderer.charset}'
         response_headers['Content-Type'] = renderer_content_type
 
         if getattr(view, 'paginator', None) and view.paginator.display_page_controls:
@@ -673,7 +670,9 @@ class BrowsableAPIRenderer(BaseRenderer):
         csrf_header_name = csrf_header_name.replace('_', '-')
 
         return {
-            'content': self.get_content(renderer, data, accepted_media_type, renderer_context),
+            'content': self.get_content(
+                renderer, data, accepted_media_type, renderer_context
+            ),
             'code_style': pygments_css(self.code_style),
             'view': view,
             'request': request,
@@ -685,28 +684,28 @@ class BrowsableAPIRenderer(BaseRenderer):
             'paginator': paginator,
             'breadcrumblist': self.get_breadcrumbs(request),
             'allowed_methods': view.allowed_methods,
-            'available_formats': [renderer_cls.format for renderer_cls in view.renderer_classes],
+            'available_formats': [
+                renderer_cls.format for renderer_cls in view.renderer_classes
+            ],
             'response_headers': response_headers,
-
             'put_form': self.get_rendered_html_form(data, view, 'PUT', request),
             'post_form': self.get_rendered_html_form(data, view, 'POST', request),
-            'delete_form': self.get_rendered_html_form(data, view, 'DELETE', request),
-            'options_form': self.get_rendered_html_form(data, view, 'OPTIONS', request),
-
+            'delete_form': self.get_rendered_html_form(
+                data, view, 'DELETE', request
+            ),
+            'options_form': self.get_rendered_html_form(
+                data, view, 'OPTIONS', request
+            ),
             'extra_actions': self.get_extra_actions(view, response.status_code),
-
             'filter_form': self.get_filter_form(data, view, request),
-
             'raw_data_put_form': raw_data_put_form,
             'raw_data_post_form': raw_data_post_form,
             'raw_data_patch_form': raw_data_patch_form,
             'raw_data_put_or_patch_form': raw_data_put_or_patch_form,
-
-            'display_edit_forms': bool(response.status_code != 403),
-
+            'display_edit_forms': response.status_code != 403,
             'api_settings': api_settings,
             'csrf_cookie_name': csrf_cookie_name,
-            'csrf_header_name': csrf_header_name
+            'csrf_header_name': csrf_header_name,
         }
 
     def render(self, data, accepted_media_type=None, renderer_context=None):
@@ -852,17 +851,22 @@ class DocumentationRenderer(BaseRenderer):
         return {
             'document': data,
             'langs': self.languages,
-            'lang_htmls': ["rest_framework/docs/langs/%s.html" % language for language in self.languages],
-            'lang_intro_htmls': ["rest_framework/docs/langs/%s-intro.html" % language for language in self.languages],
+            'lang_htmls': [
+                f"rest_framework/docs/langs/{language}.html"
+                for language in self.languages
+            ],
+            'lang_intro_htmls': [
+                f"rest_framework/docs/langs/{language}-intro.html"
+                for language in self.languages
+            ],
             'code_style': pygments_css(self.code_style),
-            'request': request
+            'request': request,
         }
 
     def render(self, data, accepted_media_type=None, renderer_context=None):
         if isinstance(data, coreapi.Document):
             template = loader.get_template(self.template)
             context = self.get_context(data, renderer_context['request'])
-            return template.render(context, request=renderer_context['request'])
         else:
             template = loader.get_template(self.error_template)
             context = {
@@ -871,7 +875,8 @@ class DocumentationRenderer(BaseRenderer):
                 "response": renderer_context['response'],
                 "debug": settings.DEBUG,
             }
-            return template.render(context, request=renderer_context['request'])
+
+        return template.render(context, request=renderer_context['request'])
 
 
 class SchemaJSRenderer(BaseRenderer):
@@ -963,7 +968,7 @@ class _BaseOpenAPIRenderer:
         return parameters
 
     def get_operation(self, link, name, tag):
-        operation_id = "%s_%s" % (tag, name) if tag else name
+        operation_id = f"{tag}_{name}" if tag else name
         parameters = self.get_parameters(link)
 
         operation = {

@@ -14,10 +14,11 @@ class TokenChangeList(ChangeList):
     """Map to matching User id"""
     def url_for_result(self, result):
         pk = result.user.pk
-        return reverse('admin:%s_%s_change' % (self.opts.app_label,
-                                               self.opts.model_name),
-                       args=(quote(pk),),
-                       current_app=self.model_admin.admin_site.name)
+        return reverse(
+            f'admin:{self.opts.app_label}_{self.opts.model_name}_change',
+            args=(quote(pk),),
+            current_app=self.model_admin.admin_site.name,
+        )
 
 
 class TokenAdmin(admin.ModelAdmin):
