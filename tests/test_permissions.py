@@ -68,9 +68,9 @@ ignored_get_queryset_list_view = IgnoredGetQuerySetListView.as_view()
 
 
 def basic_auth_header(username, password):
-    credentials = ('%s:%s' % (username, password))
+    credentials = f'{username}:{password}'
     base64_credentials = base64.b64encode(credentials.encode(HTTP_HEADER_ENCODING)).decode(HTTP_HEADER_ENCODING)
-    return 'Basic %s' % base64_credentials
+    return f'Basic {base64_credentials}'
 
 
 class ModelPermissionsIntegrationTests(TestCase):
@@ -372,7 +372,7 @@ class ObjectPermissionsIntegrationTests(TestCase):
             'delete': f('delete', model_name)
         }
         for perm in perms.values():
-            perm = '{}.{}'.format(app_label, perm)
+            perm = f'{app_label}.{perm}'
             assign_perm(perm, everyone)
         everyone.user_set.add(*users.values())
 

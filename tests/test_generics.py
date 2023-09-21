@@ -291,7 +291,7 @@ class TestInstanceView(TestCase):
         """
         data = {'text': 'foo'}
         filtered_out_pk = BasicModel.objects.filter(text='filtered out')[0].pk
-        request = factory.put('/{}'.format(filtered_out_pk), data, format='json')
+        request = factory.put(f'/{filtered_out_pk}', data, format='json')
         response = self.view(request, pk=filtered_out_pk).render()
         assert response.status_code == status.HTTP_404_NOT_FOUND
 
@@ -326,7 +326,7 @@ class TestFKInstanceView(TestCase):
         for item in items:
             t = ForeignKeyTarget(name=item)
             t.save()
-            ForeignKeySource(name='source_' + item, target=t).save()
+            ForeignKeySource(name=f'source_{item}', target=t).save()
 
         self.objects = ForeignKeySource.objects
         self.data = [
@@ -466,16 +466,17 @@ class DynamicSerializerView(generics.ListCreateAPIView):
     renderer_classes = (renderers.BrowsableAPIRenderer, renderers.JSONRenderer)
 
     def get_serializer_class(self):
-        if self.request.method == 'POST':
-            class DynamicSerializer(serializers.ModelSerializer):
-                class Meta:
-                    model = TwoFieldModel
-                    fields = ('field_b',)
-        else:
-            class DynamicSerializer(serializers.ModelSerializer):
-                class Meta:
-                    model = TwoFieldModel
-                    fields = '__all__'
+
+
+        class DynamicSerializer(serializers.ModelSerializer):
+
+
+
+            class Meta:
+                model = TwoFieldModel
+                fields = ('field_b', ) if self.request.method == 'POST' else '__all__'
+
+
         return DynamicSerializer
 
 

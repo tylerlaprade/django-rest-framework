@@ -466,12 +466,13 @@ class TestHTMLInput:
         assert list(serializer.validated_data) == ['message']
 
     def test_empty_html_uuidfield_with_optional(self):
+
         class TestSerializer(serializers.Serializer):
             message = serializers.UUIDField(required=False)
 
         serializer = TestSerializer(data=QueryDict('message='))
         assert serializer.is_valid()
-        assert list(serializer.validated_data) == []
+        assert not list(serializer.validated_data)
 
     def test_empty_html_charfield_allow_null(self):
         class TestSerializer(serializers.Serializer):
@@ -656,8 +657,9 @@ class FieldValues:
         Ensure that valid values return the expected validated data.
         """
         for input_value, expected_output in get_items(self.valid_inputs):
-            assert self.field.run_validation(input_value) == expected_output, \
-                'input value: {}'.format(repr(input_value))
+            assert (
+                self.field.run_validation(input_value) == expected_output
+            ), f'input value: {repr(input_value)}'
 
     def test_invalid_inputs(self):
         """
@@ -666,13 +668,15 @@ class FieldValues:
         for input_value, expected_failure in get_items(self.invalid_inputs):
             with pytest.raises(serializers.ValidationError) as exc_info:
                 self.field.run_validation(input_value)
-            assert exc_info.value.detail == expected_failure, \
-                'input value: {}'.format(repr(input_value))
+            assert (
+                exc_info.value.detail == expected_failure
+            ), f'input value: {repr(input_value)}'
 
     def test_outputs(self):
         for output_value, expected_output in get_items(self.outputs):
-            assert self.field.to_representation(output_value) == expected_output, \
-                'output value: {}'.format(repr(output_value))
+            assert (
+                self.field.to_representation(output_value) == expected_output
+            ), f'output value: {repr(output_value)}'
 
 
 # Boolean types...
@@ -1370,11 +1374,12 @@ class TestDateField(FieldValues):
     outputs = {
         datetime.date(2001, 1, 1): '2001-01-01',
         '2001-01-01': '2001-01-01',
-        str('2016-01-10'): '2016-01-10',
+        '2016-01-10': '2016-01-10',
         None: None,
         '': None,
     }
     field = serializers.DateField()
+
 
 
 class TestCustomInputFormatDateField(FieldValues):
@@ -1415,6 +1420,8 @@ class TestNoOutputFormatDateField(FieldValues):
     field = serializers.DateField(format=None)
 
 
+
+
 class TestDateTimeField(FieldValues):
     """
     Valid and invalid values for `DateTimeField`.
@@ -1435,13 +1442,16 @@ class TestDateTimeField(FieldValues):
     }
     outputs = {
         datetime.datetime(2001, 1, 1, 13, 00): '2001-01-01T13:00:00Z',
-        datetime.datetime(2001, 1, 1, 13, 00, tzinfo=utc): '2001-01-01T13:00:00Z',
+        datetime.datetime(
+            2001, 1, 1, 13, 00, tzinfo=utc
+        ): '2001-01-01T13:00:00Z',
         '2001-01-01T00:00:00': '2001-01-01T00:00:00',
-        str('2016-01-10T00:00:00'): '2016-01-10T00:00:00',
+        '2016-01-10T00:00:00': '2016-01-10T00:00:00',
         None: None,
         '': None,
     }
     field = serializers.DateTimeField(default_timezone=utc)
+
 
 
 class TestCustomInputFormatDateTimeField(FieldValues):
@@ -2389,7 +2399,7 @@ class TestBinaryJSONField(FieldValues):
 
 class MockRequest:
     def build_absolute_uri(self, value):
-        return 'http://example.com' + value
+        return f'http://example.com{value}'
 
 
 class TestFileFieldContext:

@@ -68,7 +68,7 @@ class LinkNode(OrderedDict):
             current_val = self.methods_counter[preferred_key]
             self.methods_counter[preferred_key] += 1
 
-            key = '{}_{}'.format(preferred_key, current_val)
+            key = f'{preferred_key}_{current_val}'
             if key not in self:
                 return key
 
@@ -183,12 +183,10 @@ class SchemaGenerator(BaseSchemaGenerator):
         if hasattr(view, 'action'):
             # Viewsets have explicitly named actions.
             action = view.action
+        elif is_list_view(subpath, method, view):
+            action = 'list'
         else:
-            # Views have no associated action, so we determine one from the method.
-            if is_list_view(subpath, method, view):
-                action = 'list'
-            else:
-                action = self.default_mapping[method.lower()]
+            action = self.default_mapping[method.lower()]
 
         named_path_components = [
             component for component
@@ -202,14 +200,13 @@ class SchemaGenerator(BaseSchemaGenerator):
                 # Don't count head mapping, e.g. not part of the schema
                 method for method in view.action_map if method != 'head'
             }
-            if len(mapped_methods) > 1:
-                action = self.default_mapping[method.lower()]
-                if action in self.coerce_method_names:
-                    action = self.coerce_method_names[action]
-                return named_path_components + [action]
-            else:
+            if len(mapped_methods) <= 1:
                 return named_path_components[:-1] + [action]
 
+            action = self.default_mapping[method.lower()]
+            if action in self.coerce_method_names:
+                action = self.coerce_method_names[action]
+            return named_path_components + [action]
         if action in self.coerce_method_names:
             action = self.coerce_method_names[action]
 
@@ -239,12 +236,12 @@ class SchemaGenerator(BaseSchemaGenerator):
                 if '{' in component:
                     break
                 initial_components.append(component)
-            prefix = '/'.join(initial_components[:-1])
-            if not prefix:
+            if prefix := '/'.join(initial_components[:-1]):
+                prefixes.append(f'/{prefix}/')
+            else:
                 # We can just break early in the case that there's at least
                 # one URL that doesn't have a path prefix.
                 return '/'
-            prefixes.append('/' + prefix + '/')
         return common_path(prefixes)
 
 # View Inspectors #
@@ -375,7 +372,7 @@ class AutoSchema(ViewInspector):
         manual_fields = self.get_manual_fields(path, method)
         fields = self.update_fields(fields, manual_fields)
 
-        if fields and any([field.location in ('form', 'body') for field in fields]):
+        if fields and any(field.location in ('form', 'body') for field in fields):
             encoding = self.get_encoding(path, method)
         else:
             encoding = None
@@ -454,10 +451,9 @@ class AutoSchema(ViewInspector):
             serializer = view.get_serializer()
         except exceptions.APIException:
             serializer = None
-            warnings.warn('{}.get_serializer() raised an exception during '
-                          'schema generation. Serializer fields will not be '
-                          'generated for {} {}.'
-                          .format(view.__class__.__name__, method, path))
+            warnings.warn(
+                f'{view.__class__.__name__}.get_serializer() raised an exception during schema generation. Serializer fields will not be generated for {method} {path}.'
+            )
 
         if isinstance(serializer, serializers.ListSerializer):
             return [

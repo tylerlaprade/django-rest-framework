@@ -184,12 +184,11 @@ class SimpleRouter(BaseRouter):
         known_actions = list(flatten([route.mapping.values() for route in self.routes if isinstance(route, Route)]))
         extra_actions = viewset.get_extra_actions()
 
-        # checking action names against the known actions list
-        not_allowed = [
-            action.__name__ for action in extra_actions
+        if not_allowed := [
+            action.__name__
+            for action in extra_actions
             if action.__name__ in known_actions
-        ]
-        if not_allowed:
+        ]:
             msg = ('Cannot use the @action decorator on the following '
                    'methods, as they are existing routes: %s')
             raise ImproperlyConfigured(msg % ', '.join(not_allowed))
@@ -202,7 +201,7 @@ class SimpleRouter(BaseRouter):
         for route in self.routes:
             if isinstance(route, DynamicRoute) and route.detail:
                 routes += [self._get_dynamic_route(route, action) for action in detail_actions]
-            elif isinstance(route, DynamicRoute) and not route.detail:
+            elif isinstance(route, DynamicRoute):
                 routes += [self._get_dynamic_route(route, action) for action in list_actions]
             else:
                 routes.append(route)
@@ -229,11 +228,11 @@ class SimpleRouter(BaseRouter):
         return a new mapping which only includes any mappings that
         are actually implemented by the viewset.
         """
-        bound_methods = {}
-        for method, action in method_map.items():
-            if hasattr(viewset, action):
-                bound_methods[method] = action
-        return bound_methods
+        return {
+            method: action
+            for method, action in method_map.items()
+            if hasattr(viewset, action)
+        }
 
     def get_lookup_regex(self, viewset, lookup_prefix=''):
         """
@@ -296,7 +295,7 @@ class SimpleRouter(BaseRouter):
                         if regex[0] == '/':
                             regex = regex[1:]
                     elif regex[:2] == '^/':
-                        regex = '^' + regex[2:]
+                        regex = f'^{regex[2:]}'
 
                 initkwargs = route.initkwargs.copy()
                 initkwargs.update({
@@ -325,7 +324,7 @@ class APIRootView(views.APIView):
         namespace = request.resolver_match.namespace
         for key, url_name in self.api_root_dict.items():
             if namespace:
-                url_name = namespace + ':' + url_name
+                url_name = f'{namespace}:{url_name}'
             try:
                 ret[key] = reverse(
                     url_name,

@@ -39,7 +39,7 @@ class JSONEncoderTests(TestCase):
         current_time = datetime.now()
         assert self.encoder.default(current_time) == current_time.isoformat()
         current_time_utc = current_time.replace(tzinfo=utc)
-        assert self.encoder.default(current_time_utc) == current_time.isoformat() + 'Z'
+        assert self.encoder.default(current_time_utc) == f'{current_time.isoformat()}Z'
 
     def test_encode_time(self):
         """

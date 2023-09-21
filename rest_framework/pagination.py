@@ -28,19 +28,14 @@ def _positive_int(integer_string, strict=False, cutoff=None):
     ret = int(integer_string)
     if ret < 0 or (ret == 0 and strict):
         raise ValueError()
-    if cutoff:
-        return min(ret, cutoff)
-    return ret
+    return min(ret, cutoff) if cutoff else ret
 
 
 def _divide_with_ceil(a, b):
     """
     Returns 'a' divided by 'b', with any remainder rounded up.
     """
-    if a % b:
-        return (a // b) + 1
-
-    return a // b
+    return (a // b) + 1 if a % b else a // b
 
 
 def _get_displayed_page_numbers(current, final):
@@ -120,9 +115,9 @@ def _reverse_ordering(ordering_tuple):
     ordering and return a new tuple, eg. `('created', '-uuid')`.
     """
     def invert(x):
-        return x[1:] if x.startswith('-') else '-' + x
+        return x[1:] if x.startswith('-') else f'-{x}'
 
-    return tuple([invert(item) for item in ordering_tuple])
+    return tuple(invert(item) for item in ordering_tuple)
 
 
 Cursor = namedtuple('Cursor', ['offset', 'reverse', 'position'])
@@ -495,9 +490,8 @@ class LimitOffsetPagination(BasePagination):
         def page_number_to_url(page_number):
             if page_number == 1:
                 return remove_query_param(base_url, self.offset_query_param)
-            else:
-                offset = self.offset + ((page_number - current) * self.limit)
-                return replace_query_param(base_url, self.offset_query_param, offset)
+            offset = self.offset + ((page_number - current) * self.limit)
+            return replace_query_param(base_url, self.offset_query_param, offset)
 
         page_numbers = _get_displayed_page_numbers(current, final)
         page_links = _get_page_links(page_numbers, current, page_number_to_url)
@@ -547,7 +541,7 @@ class LimitOffsetPagination(BasePagination):
         ]
 
     def get_schema_operation_parameters(self, view):
-        parameters = [
+        return [
             {
                 'name': self.limit_query_param,
                 'required': False,
@@ -567,7 +561,6 @@ class LimitOffsetPagination(BasePagination):
                 },
             },
         ]
-        return parameters
 
 
 class CursorPagination(BasePagination):
@@ -627,9 +620,9 @@ class CursorPagination(BasePagination):
 
             # Test for: (cursor reversed) XOR (queryset reversed)
             if self.cursor.reverse != is_reversed:
-                kwargs = {order_attr + '__lt': current_position}
+                kwargs = {f'{order_attr}__lt': current_position}
             else:
-                kwargs = {order_attr + '__gt': current_position}
+                kwargs = {f'{order_attr}__gt': current_position}
 
             queryset = queryset.filter(**kwargs)
 
@@ -795,12 +788,11 @@ class CursorPagination(BasePagination):
         """
         Return a tuple of strings, that may be used in an `order_by` method.
         """
-        ordering_filters = [
-            filter_cls for filter_cls in getattr(view, 'filter_backends', [])
+        if ordering_filters := [
+            filter_cls
+            for filter_cls in getattr(view, 'filter_backends', [])
             if hasattr(filter_cls, 'get_ordering')
-        ]
-
-        if ordering_filters:
+        ]:
             # If a filter exists on the view that implements `get_ordering`
             # then we defer to that filter to determine the ordering.
             filter_cls = ordering_filters[0]
@@ -832,9 +824,7 @@ class CursorPagination(BasePagination):
             )
         )
 
-        if isinstance(ordering, str):
-            return (ordering,)
-        return tuple(ordering)
+        return (ordering, ) if isinstance(ordering, str) else tuple(ordering)
 
     def decode_cursor(self, request):
         """

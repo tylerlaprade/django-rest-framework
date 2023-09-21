@@ -411,6 +411,7 @@ class TestDurationFieldMapping(TestCase):
 
 class TestGenericIPAddressFieldValidation(TestCase):
     def test_ip_address_validation(self):
+
         class IPAddressFieldModel(models.Model):
             address = models.GenericIPAddressField()
 
@@ -421,9 +422,11 @@ class TestGenericIPAddressFieldValidation(TestCase):
 
         s = TestSerializer(data={'address': 'not an ip address'})
         self.assertFalse(s.is_valid())
-        self.assertEqual(1, len(s.errors['address']),
-                         'Unexpected number of validation errors: '
-                         '{}'.format(s.errors))
+        self.assertEqual(
+            1,
+            len(s.errors['address']),
+            f'Unexpected number of validation errors: {s.errors}',
+        )
 
 
 @pytest.mark.skipif('not postgres_fields')
@@ -740,7 +743,7 @@ class DisplayValueTargetModel(models.Model):
     name = models.CharField(max_length=100)
 
     def __str__(self):
-        return '%s Color' % (self.name)
+        return f'{self.name} Color'
 
 
 class DisplayValueModel(models.Model):
@@ -766,9 +769,13 @@ class TestRelationalFieldDisplayValue(TestCase):
         self.assertEqual(serializer.fields['color'].choices, expected)
 
     def test_custom_display_value(self):
+
+
+
         class TestField(serializers.PrimaryKeyRelatedField):
             def display_value(self, instance):
-                return 'My %s Color' % (instance.name)
+                return f'My {instance.name} Color'
+
 
         class TestSerializer(serializers.ModelSerializer):
             color = TestField(queryset=DisplayValueTargetModel.objects.all())
@@ -818,6 +825,7 @@ class TestIntegration(TestCase):
         self.assertEqual(serializer.data, expected)
 
     def test_pk_create(self):
+
         class TestSerializer(serializers.ModelSerializer):
             class Meta:
                 model = RelationalModel
@@ -853,7 +861,7 @@ class TestIntegration(TestCase):
         ] == [
             item.pk for item in new_many_to_many
         ]
-        assert list(instance.through.all()) == []
+        assert not list(instance.through.all())
 
         # Representation should be correct.
         expected = {
@@ -866,6 +874,7 @@ class TestIntegration(TestCase):
         self.assertEqual(serializer.data, expected)
 
     def test_pk_update(self):
+
         class TestSerializer(serializers.ModelSerializer):
             class Meta:
                 model = RelationalModel
@@ -901,7 +910,7 @@ class TestIntegration(TestCase):
         ] == [
             item.pk for item in new_many_to_many
         ]
-        assert list(instance.through.all()) == []
+        assert not list(instance.through.all())
 
         # Representation should be correct.
         expected = {
@@ -1040,17 +1049,24 @@ class Issue7550TestCase(TestCase):
 
     def test_dotted_source(self):
 
+
         class _FooSerializer(serializers.ModelSerializer):
             class Meta:
                 model = Issue7550FooModel
                 fields = ('id', 'text')
 
+
+
         class FooSerializer(serializers.ModelSerializer):
-            other_foos = _FooSerializer(source='bar.foos', many=True)
+
 
             class Meta:
+                other_foos = _FooSerializer(source='bar.foos', many=True)
+
                 model = Issue7550BarModel
                 fields = ('id', 'other_foos')
+
+
 
         bar = Issue7550BarModel.objects.create()
         foo_a = Issue7550FooModel.objects.create(bar=bar, text='abc')
@@ -1072,17 +1088,24 @@ class Issue7550TestCase(TestCase):
 
     def test_dotted_source_with_default(self):
 
+
         class _FooSerializer(serializers.ModelSerializer):
             class Meta:
                 model = Issue7550FooModel
                 fields = ('id', 'text')
 
+
+
         class FooSerializer(serializers.ModelSerializer):
-            other_foos = _FooSerializer(source='bar.foos', default=[], many=True)
+
 
             class Meta:
+                other_foos = _FooSerializer(source='bar.foos', default=[], many=True)
+
                 model = Issue7550FooModel
                 fields = ('id', 'other_foos')
+
+
 
         foo = Issue7550FooModel.objects.create(bar=None, text='abc')
 

@@ -82,9 +82,7 @@ class ErrorDetail(str):
 
     def __ne__(self, other):
         result = self.__eq__(other)
-        if result is NotImplemented:
-            return NotImplemented
-        return not result
+        return NotImplemented if result is NotImplemented else not result
 
     def __repr__(self):
         return 'ErrorDetail(string=%r, code=%r)' % (

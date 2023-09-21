@@ -80,7 +80,7 @@ class BasicAuthentication(BaseAuthentication):
                 auth_decoded = base64.b64decode(auth[1]).decode('latin-1')
 
             userid, password = auth_decoded.split(':', 1)
-        except (TypeError, ValueError, UnicodeDecodeError, binascii.Error):
+        except (TypeError, ValueError, binascii.Error):
             msg = _('Invalid basic header. Credentials not correctly base64 encoded.')
             raise exceptions.AuthenticationFailed(msg)
 
@@ -106,7 +106,7 @@ class BasicAuthentication(BaseAuthentication):
         return (user, None)
 
     def authenticate_header(self, request):
-        return 'Basic realm="%s"' % self.www_authenticate_realm
+        return f'Basic realm="{self.www_authenticate_realm}"'
 
 
 class SessionAuthentication(BaseAuthentication):
@@ -145,7 +145,7 @@ class SessionAuthentication(BaseAuthentication):
         reason = check.process_view(request, None, (), {})
         if reason:
             # CSRF failed, bail with explicit error message
-            raise exceptions.PermissionDenied('CSRF Failed: %s' % reason)
+            raise exceptions.PermissionDenied(f'CSRF Failed: {reason}')
 
 
 class TokenAuthentication(BaseAuthentication):

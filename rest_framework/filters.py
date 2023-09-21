@@ -189,11 +189,11 @@ class OrderingFilter(BaseFilterBackend):
         the `ordering_param` value on the OrderingFilter or by
         specifying an `ORDERING_PARAM` value in the API settings.
         """
-        params = request.query_params.get(self.ordering_param)
-        if params:
+        if params := request.query_params.get(self.ordering_param):
             fields = [param.strip() for param in params.split(',')]
-            ordering = self.remove_invalid_fields(queryset, fields, view, request)
-            if ordering:
+            if ordering := self.remove_invalid_fields(
+                queryset, fields, view, request
+            ):
                 return ordering
 
         # No ordering was included, or all the ordering fields were invalid
@@ -201,9 +201,7 @@ class OrderingFilter(BaseFilterBackend):
 
     def get_default_ordering(self, view):
         ordering = getattr(view, 'ordering', None)
-        if isinstance(ordering, str):
-            return (ordering,)
-        return ordering
+        return (ordering, ) if isinstance(ordering, str) else ordering
 
     def get_default_valid_fields(self, queryset, view, context={}):
         # If `ordering_fields` is not specified, then we determine a default
@@ -234,12 +232,12 @@ class OrderingFilter(BaseFilterBackend):
 
         return [
             (field.source.replace('.', '__') or field_name, field.label)
-            for field_name, field in serializer_class(context=context).fields.items()
-            if (
-                not getattr(field, 'write_only', False) and
-                not field.source == '*' and
-                field.source not in model_property_names
-            )
+            for field_name, field in serializer_class(
+                context=context
+            ).fields.items()
+            if not getattr(field, 'write_only', False)
+            and field.source != '*'
+            and field.source not in model_property_names
         ]
 
     def get_valid_fields(self, queryset, view, context={}):
@@ -277,9 +275,7 @@ class OrderingFilter(BaseFilterBackend):
         return [term for term in fields if term_valid(term)]
 
     def filter_queryset(self, request, queryset, view):
-        ordering = self.get_ordering(request, queryset, view)
-
-        if ordering:
+        if ordering := self.get_ordering(request, queryset, view):
             return queryset.order_by(*ordering)
 
         return queryset
@@ -294,8 +290,12 @@ class OrderingFilter(BaseFilterBackend):
             'param': self.ordering_param,
         }
         for key, label in self.get_valid_fields(queryset, view, context):
-            options.append((key, '%s - %s' % (label, _('ascending'))))
-            options.append(('-' + key, '%s - %s' % (label, _('descending'))))
+            options.extend(
+                (
+                    (key, f"{label} - {_('ascending')}"),
+                    (f'-{key}', f"{label} - {_('descending')}"),
+                )
+            )
         context['options'] = options
         return context
 

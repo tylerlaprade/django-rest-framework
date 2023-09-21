@@ -85,7 +85,9 @@ class SchemaGenerator(BaseSchemaGenerator):
                     continue
                 if components_schemas[k] == components[k]:
                     continue
-                warnings.warn('Schema component "{}" has been overriden with a different value.'.format(k))
+                warnings.warn(
+                    f'Schema component "{k}" has been overriden with a different value.'
+                )
 
             components_schemas.update(components)
 
@@ -106,7 +108,7 @@ class SchemaGenerator(BaseSchemaGenerator):
             'paths': paths,
         }
 
-        if len(components_schemas) > 0:
+        if components_schemas:
             schema['components'] = {
                 'schemas': components_schemas
             }
@@ -142,9 +144,8 @@ class AutoSchema(ViewInspector):
     }
 
     def get_operation(self, path, method):
-        operation = {}
+        operation = {'operationId': self.get_operation_id(path, method)}
 
-        operation['operationId'] = self.get_operation_id(path, method)
         operation['description'] = self.get_description(path, method)
 
         parameters = []
@@ -153,8 +154,7 @@ class AutoSchema(ViewInspector):
         parameters += self.get_filter_parameters(path, method)
         operation['parameters'] = parameters
 
-        request_body = self.get_request_body(path, method)
-        if request_body:
+        if request_body := self.get_request_body(path, method):
             operation['requestBody'] = request_body
         operation['responses'] = self.get_responses(path, method)
         operation['tags'] = self.get_tags(path, method)
@@ -177,9 +177,7 @@ class AutoSchema(ViewInspector):
 
         if component_name == "":
             raise Exception(
-                '"{}" is an invalid class name for schema generation. '
-                'Serializer\'s class name should be unique and explicit. e.g. "ItemSerializer"'
-                .format(serializer.__class__.__name__)
+                f""""{serializer.__class__.__name__}" is an invalid class name for schema generation. Serializer\'s class name should be unique and explicit. e.g. "ItemSerializer\""""
             )
 
         return component_name
@@ -334,10 +332,7 @@ class AutoSchema(ViewInspector):
             return []
 
         paginator = self.get_paginator()
-        if not paginator:
-            return []
-
-        return paginator.get_schema_operation_parameters(view)
+        return [] if not paginator else paginator.get_schema_operation_parameters(view)
 
     def map_choicefield(self, field):
         choices = list(OrderedDict.fromkeys(field.choices))  # preserve order and remove duplicates
@@ -601,8 +596,7 @@ class AutoSchema(ViewInspector):
         return field.field_name
 
     def get_paginator(self):
-        pagination_class = getattr(self.view, 'pagination_class', None)
-        if pagination_class:
+        if pagination_class := getattr(self.view, 'pagination_class', None):
             return pagination_class()
         return None
 
@@ -610,13 +604,11 @@ class AutoSchema(ViewInspector):
         return list(map(attrgetter('media_type'), self.view.parser_classes))
 
     def map_renderers(self, path, method):
-        media_types = []
-        for renderer in self.view.renderer_classes:
-            # BrowsableAPIRenderer not relevant to OpenAPI spec
-            if issubclass(renderer, renderers.BrowsableAPIRenderer):
-                continue
-            media_types.append(renderer.media_type)
-        return media_types
+        return [
+            renderer.media_type
+            for renderer in self.view.renderer_classes
+            if not issubclass(renderer, renderers.BrowsableAPIRenderer)
+        ]
 
     def get_serializer(self, path, method):
         view = self.view
@@ -627,10 +619,9 @@ class AutoSchema(ViewInspector):
         try:
             return view.get_serializer()
         except exceptions.APIException:
-            warnings.warn('{}.get_serializer() raised an exception during '
-                          'schema generation. Serializer fields will not be '
-                          'generated for {} {}.'
-                          .format(view.__class__.__name__, method, path))
+            warnings.warn(
+                f'{view.__class__.__name__}.get_serializer() raised an exception during schema generation. Serializer fields will not be generated for {method} {path}.'
+            )
             return None
 
     def get_request_serializer(self, path, method):
@@ -648,7 +639,7 @@ class AutoSchema(ViewInspector):
         return self.get_serializer(path, method)
 
     def get_reference(self, serializer):
-        return {'$ref': '#/components/schemas/{}'.format(self.get_component_name(serializer))}
+        return {'$ref': f'#/components/schemas/{self.get_component_name(serializer)}'}
 
     def get_request_body(self, path, method):
         if method not in ('PUT', 'PATCH', 'POST'):
@@ -692,8 +683,7 @@ class AutoSchema(ViewInspector):
                 'type': 'array',
                 'items': item_schema,
             }
-            paginator = self.get_paginator()
-            if paginator:
+            if paginator := self.get_paginator():
                 response_schema = paginator.get_paginated_response_schema(response_schema)
         else:
             response_schema = item_schema

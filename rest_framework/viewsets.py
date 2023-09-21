@@ -158,12 +158,12 @@ class ViewSetMixin:
         """
         Reverse the action for the given `url_name`.
         """
-        url_name = '%s-%s' % (self.basename, url_name)
+        url_name = f'{self.basename}-{url_name}'
         namespace = None
         if self.request and self.request.resolver_match:
             namespace = self.request.resolver_match.namespace
         if namespace:
-            url_name = namespace + ':' + url_name
+            url_name = f'{namespace}:{url_name}'
         kwargs.setdefault('request', self.request)
 
         return reverse(url_name, *args, **kwargs)
@@ -197,10 +197,9 @@ class ViewSetMixin:
 
         for action in actions:
             try:
-                url_name = '%s-%s' % (self.basename, action.url_name)
-                namespace = self.request.resolver_match.namespace
-                if namespace:
-                    url_name = '%s:%s' % (namespace, url_name)
+                url_name = f'{self.basename}-{action.url_name}'
+                if namespace := self.request.resolver_match.namespace:
+                    url_name = f'{namespace}:{url_name}'
 
                 url = reverse(url_name, self.args, self.kwargs, request=self.request)
                 view = self.__class__(**action.kwargs)

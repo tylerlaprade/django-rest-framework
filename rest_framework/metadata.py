@@ -65,8 +65,7 @@ class SimpleMetadata(BaseMetadata):
         metadata['renders'] = [renderer.media_type for renderer in view.renderer_classes]
         metadata['parses'] = [parser.media_type for parser in view.parser_classes]
         if hasattr(view, 'get_serializer'):
-            actions = self.determine_actions(request, view)
-            if actions:
+            if actions := self.determine_actions(request, view):
                 metadata['actions'] = actions
         return metadata
 

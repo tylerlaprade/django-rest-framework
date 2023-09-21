@@ -210,9 +210,9 @@ class TestAPITestClient(TestCase):
         for method, code in itertools.product(methods, codes):
             subtest_ctx = self.subTest(method=method, code=code)
             patch_ctx = patch.object(self.client, method, side_effect=getattr(self.client, method))
-            with subtest_ctx, patch_ctx as req_method:
+            with (subtest_ctx, patch_ctx as req_method):
                 kwargs = {'data': {'example': 'test'}, 'format': 'json'}
-                response = req_method('/redirect-view/%s/' % code, follow=True, **kwargs)
+                response = req_method(f'/redirect-view/{code}/', follow=True, **kwargs)
                 assert response.redirect_chain is not None
                 assert response.status_code == 200
                 for _, call_args, call_kwargs in req_method.mock_calls:

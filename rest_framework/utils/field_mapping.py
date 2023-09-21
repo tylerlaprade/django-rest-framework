@@ -37,7 +37,7 @@ class ClassLookupDict:
         for cls in inspect.getmro(base_class):
             if cls in self.mapping:
                 return self.mapping[cls]
-        raise KeyError('Class %s not found in lookup.' % base_class.__name__)
+        raise KeyError(f'Class {base_class.__name__} not found in lookup.')
 
     def __setitem__(self, key, value):
         self.mapping[key] = value
@@ -66,7 +66,7 @@ def get_unique_validators(field_name, model_field):
     """
     Returns a list of UniqueValidators that should be applied to the field.
     """
-    field_set = set([field_name])
+    field_set = {field_name}
     conditions = {
         c.condition
         for c in model_field.model._meta.constraints
@@ -89,13 +89,9 @@ def get_field_kwargs(field_name, model_field):
     """
     Creates a default instance of a basic non-relational field.
     """
-    kwargs = {}
     validator_kwarg = list(model_field.validators)
 
-    # The following will only be used by ModelField classes.
-    # Gets removed for everything else.
-    kwargs['model_field'] = model_field
-
+    kwargs = {'model_field': model_field}
     if model_field.verbose_name and needs_label(model_field, field_name):
         kwargs['label'] = capfirst(model_field.verbose_name)
 
@@ -263,8 +259,7 @@ def get_relation_kwargs(field_name, relation_info):
     if to_field:
         kwargs['to_field'] = to_field
 
-    limit_choices_to = model_field and model_field.get_limit_choices_to()
-    if limit_choices_to:
+    if limit_choices_to := model_field and model_field.get_limit_choices_to():
         if not isinstance(limit_choices_to, models.Q):
             limit_choices_to = models.Q(**limit_choices_to)
         kwargs['queryset'] = kwargs['queryset'].filter(limit_choices_to)
@@ -276,8 +271,7 @@ def get_relation_kwargs(field_name, relation_info):
     if model_field:
         if model_field.verbose_name and needs_label(model_field, field_name):
             kwargs['label'] = capfirst(model_field.verbose_name)
-        help_text = model_field.help_text
-        if help_text:
+        if help_text := model_field.help_text:
             kwargs['help_text'] = help_text
         if not model_field.editable:
             kwargs['read_only'] = True

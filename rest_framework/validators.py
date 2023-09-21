@@ -48,7 +48,7 @@ class UniqueValidator:
         """
         Filter the queryset to all instances matching the given attribute.
         """
-        filter_kwargs = {'%s__%s' % (field_name, self.lookup): value}
+        filter_kwargs = {f'{field_name}__{self.lookup}': value}
         return qs_filter(queryset, **filter_kwargs)
 
     def exclude_current_instance(self, queryset, instance):
@@ -56,9 +56,7 @@ class UniqueValidator:
         If an instance is being updated, then do not include
         that instance itself as a uniqueness conflict.
         """
-        if instance is not None:
-            return queryset.exclude(pk=instance.pk)
-        return queryset
+        return queryset.exclude(pk=instance.pk) if instance is not None else queryset
 
     def __call__(self, value, serializer_field):
         # Determine the underlying model field name. This may not be the
@@ -74,10 +72,7 @@ class UniqueValidator:
             raise ValidationError(self.message, code='unique')
 
     def __repr__(self):
-        return '<%s(queryset=%s)>' % (
-            self.__class__.__name__,
-            smart_repr(self.queryset)
-        )
+        return f'<{self.__class__.__name__}(queryset={smart_repr(self.queryset)})>'
 
 
 class UniqueTogetherValidator:
@@ -103,12 +98,11 @@ class UniqueTogetherValidator:
         if serializer.instance is not None:
             return
 
-        missing_items = {
+        if missing_items := {
             field_name: self.missing_message
             for field_name in self.fields
             if serializer.fields[field_name].source not in attrs
-        }
-        if missing_items:
+        }:
             raise ValidationError(missing_items, code='required')
 
     def filter_queryset(self, attrs, queryset, serializer):
@@ -140,9 +134,7 @@ class UniqueTogetherValidator:
         If an instance is being updated, then do not include
         that instance itself as a uniqueness conflict.
         """
-        if instance is not None:
-            return queryset.exclude(pk=instance.pk)
-        return queryset
+        return queryset.exclude(pk=instance.pk) if instance is not None else queryset
 
     def __call__(self, attrs, serializer):
         self.enforce_required_fields(attrs, serializer)
@@ -160,11 +152,7 @@ class UniqueTogetherValidator:
             raise ValidationError(message, code='unique')
 
     def __repr__(self):
-        return '<%s(queryset=%s, fields=%s)>' % (
-            self.__class__.__name__,
-            smart_repr(self.queryset),
-            smart_repr(self.fields)
-        )
+        return f'<{self.__class__.__name__}(queryset={smart_repr(self.queryset)}, fields={smart_repr(self.fields)})>'
 
 
 class ProhibitSurrogateCharactersValidator:
@@ -194,12 +182,11 @@ class BaseUniqueForValidator:
         The `UniqueFor<Range>Validator` classes always force an implied
         'required' state on the fields they are applied to.
         """
-        missing_items = {
+        if missing_items := {
             field_name: self.missing_message
             for field_name in [self.field, self.date_field]
             if field_name not in attrs
-        }
-        if missing_items:
+        }:
             raise ValidationError(missing_items, code='required')
 
     def filter_queryset(self, attrs, queryset, field_name, date_field_name):
@@ -210,9 +197,7 @@ class BaseUniqueForValidator:
         If an instance is being updated, then do not include
         that instance itself as a uniqueness conflict.
         """
-        if instance is not None:
-            return queryset.exclude(pk=instance.pk)
-        return queryset
+        return queryset.exclude(pk=instance.pk) if instance is not None else queryset
 
     def __call__(self, attrs, serializer):
         # Determine the underlying model field names. These may not be the
@@ -231,12 +216,7 @@ class BaseUniqueForValidator:
             }, code='unique')
 
     def __repr__(self):
-        return '<%s(queryset=%s, field=%s, date_field=%s)>' % (
-            self.__class__.__name__,
-            smart_repr(self.queryset),
-            smart_repr(self.field),
-            smart_repr(self.date_field)
-        )
+        return f'<{self.__class__.__name__}(queryset={smart_repr(self.queryset)}, field={smart_repr(self.field)}, date_field={smart_repr(self.date_field)})>'
 
 
 class UniqueForDateValidator(BaseUniqueForValidator):
@@ -246,11 +226,12 @@ class UniqueForDateValidator(BaseUniqueForValidator):
         value = attrs[self.field]
         date = attrs[self.date_field]
 
-        filter_kwargs = {}
-        filter_kwargs[field_name] = value
-        filter_kwargs['%s__day' % date_field_name] = date.day
-        filter_kwargs['%s__month' % date_field_name] = date.month
-        filter_kwargs['%s__year' % date_field_name] = date.year
+        filter_kwargs = {
+            field_name: value,
+            f'{date_field_name}__day': date.day,
+            f'{date_field_name}__month': date.month,
+            f'{date_field_name}__year': date.year,
+        }
         return qs_filter(queryset, **filter_kwargs)
 
 
@@ -261,9 +242,7 @@ class UniqueForMonthValidator(BaseUniqueForValidator):
         value = attrs[self.field]
         date = attrs[self.date_field]
 
-        filter_kwargs = {}
-        filter_kwargs[field_name] = value
-        filter_kwargs['%s__month' % date_field_name] = date.month
+        filter_kwargs = {field_name: value, f'{date_field_name}__month': date.month}
         return qs_filter(queryset, **filter_kwargs)
 
 
@@ -274,7 +253,5 @@ class UniqueForYearValidator(BaseUniqueForValidator):
         value = attrs[self.field]
         date = attrs[self.date_field]
 
-        filter_kwargs = {}
-        filter_kwargs[field_name] = value
-        filter_kwargs['%s__year' % date_field_name] = date.year
+        filter_kwargs = {field_name: value, f'{date_field_name}__year': date.year}
         return qs_filter(queryset, **filter_kwargs)
